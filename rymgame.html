@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Higher or Lower - Album Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #000;
+            color: #fff;
+            overflow: hidden;
+            margin: 0;
+        }
+
+        .game-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+        }
+
+        .side {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+            position: relative;
+            background-size: cover;
+            background-position: center;
+            transition: transform 0.6s cubic-bezier(0.65, 0, 0.35, 1);
+        }
+
+        .side::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.8));
+            z-index: 1;
+        }
+
+        .content {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        .vs-circle {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px;
+            height: 80px;
+            background: #fff;
+            color: #000;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 900;
+            font-size: 1.5rem;
+            z-index: 20;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+
+        .stat-value {
+            font-size: 3.5rem;
+            font-weight: 900;
+            margin: 0.5rem 0;
+            color: #facc15;
+        }
+
+        .btn-choice {
+            background: transparent;
+            border: 2px solid #fff;
+            color: #fff;
+            padding: 1rem 3rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 220px;
+            justify-content: center;
+        }
+
+        .btn-choice:hover {
+            background: #fff;
+            color: #000;
+        }
+
+        .genre-tag {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(5px);
+            padding: 6px 16px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            z-index: 15;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .score-badge {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 10px 20px;
+            border-radius: 10px;
+            z-index: 30;
+            font-weight: bold;
+        }
+
+        .game-over-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .game-over-overlay.visible {
+            display: flex;
+            opacity: 1;
+        }
+
+        .wrong-flash {
+            animation: flashRed 0.5s;
+        }
+
+        @keyframes flashRed {
+            0%, 100% { background-color: transparent; }
+            50% { background-color: rgba(239, 68, 68, 0.4); }
+        }
+
+        @media (max-width: 768px) {
+            .game-container { flex-direction: column; }
+            .vs-circle { width: 60px; height: 60px; font-size: 1.2rem; }
+            .stat-value { font-size: 2.5rem; }
+            .genre-tag { bottom: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="score-badge" id="score-display">High Score: 0 | Score: 0</div>
+
+    <div class="game-container" id="game-container">
+        <!-- Left Side -->
+        <div id="left-side" class="side">
+            <div class="content">
+                <h2 class="text-3xl font-black uppercase tracking-widest leading-tight" id="left-name">Loading...</h2>
+                <p class="text-sm italic opacity-70 mb-4" id="left-subtitle">Artist Name</p>
+                <p class="text-lg">has approximately</p>
+                <div class="stat-value" id="left-stat">0</div>
+                <p class="text-sm uppercase tracking-widest opacity-60">Million Certified Units Sold</p>
+            </div>
+            <div class="genre-tag" id="left-genre">GENRE</div>
+        </div>
+
+        <div class="vs-circle">VS</div>
+
+        <!-- Right Side -->
+        <div id="right-side" class="side">
+            <div class="content" id="challenger-content">
+                <h2 class="text-3xl font-black uppercase tracking-widest leading-tight" id="right-name">Loading...</h2>
+                <p class="text-sm italic opacity-70 mb-4" id="right-subtitle">Artist Name</p>
+                <p class="text-lg">has</p>
+                
+                <div id="guess-controls" class="flex flex-col items-center">
+                    <button class="btn-choice" onclick="makeGuess('higher')">
+                        HIGHER
+                        <svg fill="currentColor" viewBox="0 0 20 20"><path d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z"/></svg>
+                    </button>
+                    <button class="btn-choice" onclick="makeGuess('lower')">
+                        LOWER
+                        <svg fill="currentColor" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+                    </button>
+                </div>
+
+                <div class="stat-value hidden" id="right-stat">0</div>
+                <p class="text-sm uppercase tracking-widest opacity-60">Million Certified Units Sold</p>
+            </div>
+            <div class="genre-tag" id="right-genre">GENRE</div>
+        </div>
+    </div>
+
+    <div id="game-over" class="game-over-overlay">
+        <h1 class="text-6xl font-black mb-4 text-red-500">PLATINUM LOST!</h1>
+        <p class="text-2xl mb-8 opacity-80">You survived <span id="final-score">0</span> rounds</p>
+        <button class="bg-white text-black px-10 py-4 rounded-full font-bold hover:bg-yellow-400 transition-colors" onclick="resetGame()">
+            NEW TOUR
+        </button>
+    </div>
+
+    <script>
+        // Values updated to reflect millions
+        const items = [
+            { name: "OK Computer", subtitle: "Radiohead", genre: "Alternative Rock / Art Rock", value: 4.30, img: "https://e.snmc.io/i/600/s/91f41d53d83f36ac3bb0cee7d6dffca3/11993756/radiohead-ok-computer-Cover-Art.jpg" },
+            { name: "Kid A", subtitle: "Radiohead", genre: "Art Rock / Electronic", value: 4.26, img: "https://e.snmc.io/i/600/s/076215c80b1810341e978bbdbf47af69/12580450/radiohead-kid-a-Cover-Art.jpg" },
+            { name: "The Dark Side of the Moon", subtitle: "Pink Floyd", genre: "Art Rock / Progressive Rock", value: 4.27, img: "https://e.snmc.io/i/600/s/b87ea178beaaaf0e0e4a39aaf9d1b834/12206378/pink-floyd-the-dark-side-of-the-moon-Cover-Art.jpg" },
+            { name: "To Pimp a Butterfly", subtitle: "Kendrick Lamar", genre: "Conscious Hip Hop / Jazz Rap", value: 4.38, img: "https://e.snmc.io/i/600/s/a47f7eef08776272f5525d5a1f7c9c6a/8121875/kendrick-lamar-to-pimp-a-butterfly-Cover-Art.jpg" },
+            { name: "In Rainbows", subtitle: "Radiohead", genre: "Art Rock / Alternative Rock", value: 4.33, img: "https://e.snmc.io/i/600/s/fadce3351784e528a8257b7c78f0b55a/14126517/radiohead-in-rainbows-Cover-Art.jpg" },
+            { name: "My Beautiful Dark Twisted Fantasy", subtitle: "Kanye West", genre: "Pop Rap", value: 4.08, img: "https://e.snmc.io/i/600/s/d24ec02f97afc662d25c395303eb2f7b/6045065/kanye-west-my-beautiful-dark-twisted-fantasy-Cover-Art.jpg" },
+            { name: "Loveless", subtitle: "My Bloody Valentine", genre: "Shoegaze / Noise Pop", value: 4.25, img: "https://e.snmc.io/i/600/s/47da1d4284997ca321af967068f34d7b/11569981/my-bloody-valentine-loveless-Cover-Art.jpg" },
+            { name: "Wish You Were Here", subtitle: "Pink Floyd", genre: "Progressive Rock / Art Rock", value: 4.37, img: "https://e.snmc.io/i/600/s/439b9503e9599050fda01d8eef4f8097/4184635/pink-floyd-wish-you-were-here-Cover-Art.png" },
+            { name: "Good Kid, M.A.A.D City", subtitle: "Kendrick Lamar", genre: "Conscious Hip Hop", value: 4.33, img: "https://e.snmc.io/i/600/s/396ac90b321caf0d18875f140e782ae4/11410589/kendrick-lamar-good-kid-m_a_a_d-city-Cover-Art.jpg" },
+            { name: "The Bends", subtitle: "Radiohead", genre: "Alternative Rock", value: 3.89, img: "https://e.snmc.io/i/600/s/f8ce969cdd392f8edecccfef1e0609c5/14043991/radiohead-the-bends-Cover-Art.jpg" },
+            { name: "In the Court of the Crimson King", subtitle: "King Crimson", genre: "Progressive Rock / Art Rock", value: 4.33, img: "https://e.snmc.io/i/600/s/3cd976bf3380626a9001dc2f1499037b/11859497/king-crimson-in-the-court-of-the-crimson-king-Cover-Art.jpg" },
+            { name: "Abbey Road", subtitle: "The Beatles", genre: "Pop Rock", value: 4.30, img: "https://e.snmc.io/i/600/s/b7d49832f4958688cd82b6dbb9f4dd31/12188855/the-beatles-abbey-road-Cover-Art.jpg" },
+            { name: "In the Aeroplane Over the Sea", subtitle: "Neutral Milk Hotel", genre: "Indie Folk / Indie Rock", value: 4.08, img: "https://e.snmc.io/i/600/s/af5ad66b801e468ac3e6e988d1fc3b1b/12274753/neutral-milk-hotel-in-the-aeroplane-over-the-sea-Cover-Art.jpg" },
+            { name: "Igor", subtitle: "Tyler, The Creator", genre: "Neo-Soul", value: 4.11, img: "https://e.snmc.io/i/600/s/47500e0f64ec50b69a3b021a8d64557f/7574908/tyler-the-creator-igor-Cover-Art.jpg" },
+            { name: "Nevermind", subtitle: "Nirvana", genre: "Grunge", value: 4.04, img: "https://e.snmc.io/i/fullres/s/cef8991526256435f99818876f7e4a6c/12369917" },
+            { name: "Madvillainy", subtitle: "Madvillain", genre: "Abstract Hip Hop", value: 4.33, img: "https://e.snmc.io/i/600/s/9c52ece824b06220dd56f69119aa5739/13200445/madvillain-madvillainy-Cover-Art.jpg" },
+            { name: "Revolver", subtitle: "The Beatles", genre: "Pop Rock / Psychedelic Pop", value: 4.23, img: "https://e.snmc.io/i/600/s/551a5210bed27d76046ec4788b5b754c/12121976/the-beatles-revolver-Cover-Art.jpg" },
+            { name: "The Velvet Underground & Nico", subtitle: "The Velvet Underground & Nico", genre: "Art Rock / Experimental Rock", value: 4.20, img: "https://e.snmc.io/i/600/s/82eab011e8337b724c4aa6eb6a588276/14191308/the-velvet-underground-and-nico-the-velvet-underground-and-nico-Cover-Art.jpg" },
+            { name: "Yeezus", subtitle: "Kanye West", genre: "Experimental Hip Hop", value: 3.85, img: "https://e.snmc.io/i/600/s/fe9f4002cc02e2cd6c2684f5766347f8/9558628/kanye-west-yeezus-Cover-Art.png" },
+            { name: "The College Dropout", subtitle: "Kanye West", genre: "Chipmunk Soul / Pop Rap", value: 4.15, img: "https://e.snmc.io/i/600/s/1810a1c00bfd7c2d4093a501067e79a8/4096884/kanye-west-the-college-dropout-Cover-Art.jpg" }
+        ];
+
+        let score = 0;
+        let highscore = 0;
+        let currentLeft;
+        let currentRight;
+        let usedIndices = [];
+        let isTransitioning = false;
+
+        const leftNameEl = document.getElementById('left-name');
+        const rightNameEl = document.getElementById('right-name');
+        const leftSubtitleEl = document.getElementById('left-subtitle');
+        const rightSubtitleEl = document.getElementById('right-subtitle');
+        const leftGenreEl = document.getElementById('left-genre');
+        const rightGenreEl = document.getElementById('right-genre');
+        const leftStatEl = document.getElementById('left-stat');
+        const rightStatEl = document.getElementById('right-stat');
+        const guessControls = document.getElementById('guess-controls');
+        const scoreDisplay = document.getElementById('score-display');
+        const gameOverOverlay = document.getElementById('game-over');
+        const finalScoreEl = document.getElementById('final-score');
+        const leftSide = document.getElementById('left-side');
+        const rightSide = document.getElementById('right-side');
+
+        function getRandomItem() {
+            if (usedIndices.length >= items.length) usedIndices = [];
+            
+            let index;
+            do {
+                index = Math.floor(Math.random() * items.length);
+            } while (usedIndices.includes(index) || (currentLeft && items[index].name === currentLeft.name));
+            
+            usedIndices.push(index);
+            return items[index];
+        }
+
+        function formatNumber(num) {
+            // Force 2 decimal points
+            return parseFloat(num).toFixed(2);
+        }
+
+        function animateNumber(element, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const currentVal = (progress * (end - start) + start);
+                element.innerText = formatNumber(currentVal);
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        function initRound() {
+            if (!currentLeft) {
+                currentLeft = getRandomItem();
+            }
+            currentRight = getRandomItem();
+
+            leftSide.style.backgroundImage = `url(${currentLeft.img})`;
+            rightSide.style.backgroundImage = `url(${currentRight.img})`;
+
+            leftNameEl.innerText = `${currentLeft.name}`;
+            leftSubtitleEl.innerText = currentLeft.subtitle;
+            leftGenreEl.innerText = currentLeft.genre;
+            
+            rightNameEl.innerText = `${currentRight.name}`;
+            rightSubtitleEl.innerText = currentRight.subtitle;
+            rightGenreEl.innerText = currentRight.genre;
+            
+            leftStatEl.innerText = formatNumber(currentLeft.value);
+            
+            rightStatEl.classList.add('hidden');
+            guessControls.classList.remove('hidden');
+            isTransitioning = false;
+        }
+
+        function makeGuess(choice) {
+            if (isTransitioning) return;
+            isTransitioning = true;
+
+            const win = (choice === 'higher' && currentRight.value >= currentLeft.value) ||
+                        (choice === 'lower' && currentRight.value <= currentLeft.value);
+
+            guessControls.classList.add('hidden');
+            rightStatEl.classList.remove('hidden');
+            animateNumber(rightStatEl, 0, currentRight.value, 800);
+
+            setTimeout(() => {
+                if (win) {
+                    handleWin();
+                } else {
+                    handleLoss();
+                }
+            }, 1500);
+        }
+
+        function handleWin() {
+            score++;
+            if (score > highscore) highscore = score;
+            updateScore();
+            
+            rightStatEl.classList.add('text-green-400');
+            
+            setTimeout(() => {
+                rightStatEl.classList.remove('text-green-400');
+                
+                leftSide.style.transform = 'translateX(-100%)';
+                rightSide.style.transform = 'translateX(-100%)';
+                
+                setTimeout(() => {
+                    currentLeft = currentRight;
+                    
+                    leftSide.style.transition = 'none';
+                    rightSide.style.transition = 'none';
+                    leftSide.style.transform = 'translateX(0)';
+                    rightSide.style.transform = 'translateX(0)';
+                    
+                    leftSide.offsetHeight; 
+                    
+                    leftSide.style.transition = '';
+                    rightSide.style.transition = '';
+                    
+                    initRound();
+                }, 600);
+            }, 800);
+        }
+
+        function handleLoss() {
+            document.body.classList.add('wrong-flash');
+            setTimeout(() => document.body.classList.remove('wrong-flash'), 500);
+            
+            finalScoreEl.innerText = score;
+            gameOverOverlay.classList.add('visible');
+        }
+
+        function updateScore() {
+            scoreDisplay.innerText = `High Score: ${highscore} | Score: ${score}`;
+        }
+
+        function resetGame() {
+            score = 0;
+            usedIndices = [];
+            currentLeft = null;
+            updateScore();
+            gameOverOverlay.classList.remove('visible');
+            initRound();
+        }
+
+        window.onload = initRound;
+    </script>
+</body>
+</html>
